@@ -2,7 +2,7 @@ name: Rebel Verified
 description: "Scan your repo - findings become actions, rescans prove completion."
 branding:
   icon: check-circle
-  color: green
+  color: gray-dark
 inputs:
   api-key:
     description: "Rebel Verified API key (rbk_...). Get one free via POST /v1/signup."
