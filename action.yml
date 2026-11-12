@@ -1,8 +1,5 @@
 name: Rebel Verified
-description: >
-  Scan a repository with Rebel Verified — findings become actionable
-  recommendations, and the scan is persisted for verify/compare. Requires an
-  rbk_ API key (https://rebeltechlabs.io — POST /v1/signup to get one free).
+description: "Scan your repo - findings become actions, rescans prove completion."
 branding:
   icon: check-circle
   color: green
