@@ -1,0 +1,82 @@
+name: Rebel Verified
+description: >
+  Scan a repository with Rebel Verified — findings become actionable
+  recommendations, and the scan is persisted for verify/compare. Requires an
+  rbk_ API key (https://rebeltechlabs.io — POST /v1/signup to get one free).
+branding:
+  icon: check-circle
+  color: green
+inputs:
+  api-key:
+    description: "Rebel Verified API key (rbk_...). Get one free via POST /v1/signup."
+    required: true
+  repo:
+    description: "GitHub repo to scan, owner/name. Defaults to the workflow's repo."
+    required: false
+    default: ${{ github.repository }}
+  api-url:
+    description: "API base URL (self-hosted installs override this)."
+    required: false
+    default: "https://gxo8latjoa.execute-api.us-east-1.amazonaws.com"
+  repo-token:
+    description: "GitHub token for private repos (sent to the API only for the clone; never stored)."
+    required: false
+    default: ${{ github.token }}
+  no-ai:
+    description: "Skip AI fix suggestions (deterministic rules only)."
+    required: false
+    default: "false"
+  fail-on-findings:
+    description: "Exit non-zero when the scan produces findings."
+    required: false
+    default: "true"
+outputs:
+  scan-id:
+    description: "ID of the persisted scan — feed to compare/verify steps."
+    value: ${{ steps.scan.outputs.scan-id }}
+  findings:
+    description: "Number of findings produced."
+    value: ${{ steps.scan.outputs.findings }}
+runs:
+  using: composite
+  steps:
+    - id: scan
+      shell: bash
+      env:
+        REBEL_API_KEY: ${{ inputs.api-key }}
+        REBEL_API_URL: ${{ inputs.api-url }}
+        REBEL_REPO: ${{ inputs.repo }}
+        REBEL_REPO_TOKEN: ${{ inputs.repo-token }}
+        REBEL_NO_AI: ${{ inputs.no-ai }}
+        REBEL_FAIL: ${{ inputs.fail-on-findings }}
+      run: |
+        set -euo pipefail
+        body=$(python3 - <<'EOF'
+        import json, os
+        print(json.dumps({
+            "repo": os.environ["REBEL_REPO"],
+            "repoToken": os.environ.get("REBEL_REPO_TOKEN") or None,
+            "noAi": os.environ.get("REBEL_NO_AI") == "true",
+        }))
+        EOF
+        )
+        resp=$(curl -sf -X POST "$REBEL_API_URL/v1/scans" \
+          -H "Authorization: Bearer $REBEL_API_KEY" \
+          -H "Content-Type: application/json" \
+          -d "$body") || { echo "::error::scan request failed (check api-key/quota)"; exit 1; }
+        echo "$resp" > rebel-scan.json
+        python3 - <<'EOF'
+        import json, os, sys
+        r = json.load(open("rebel-scan.json"))
+        s = r.get("scan") or {}
+        n = len(s.get("findings") or [])
+        sid = s.get("scanId") or s.get("scan_id") or ""
+        print(f"scan-id={sid}" >> open(os.environ["GITHUB_OUTPUT"], "a"))
+        print(f"findings={n}" >> open(os.environ["GITHUB_OUTPUT"], "a"))
+        print(f"::notice::Rebel Verified scan {sid}: {n} findings")
+        for f in (s.get("findings") or [])[:50]:
+            print(f"::warning file={f.get('file','?')}::{f.get('ruleId','?')}: {f.get('message','')}")
+        if n and os.environ.get("REBEL_FAIL") == "true":
+            print(f"::error::{n} findings — see rebel-scan.json")
+            sys.exit(1)
+        EOF
