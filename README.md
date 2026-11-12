@@ -1,3 +1,5 @@
+<p align="center"><img src="assets/logo.png" alt="Rebel Tech Labs" width="180"></p>
+
 # Rebel Verified Action
 
 > Don't just build it. Prove it.
