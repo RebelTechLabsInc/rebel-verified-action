@@ -1,8 +1,11 @@
 name: Rebel Verified
-description: "Scan your repo - findings become actions, rescans prove completion."
+description: >
+  Scan a repository with Rebel Verified — findings become actionable
+  recommendations, and the scan is persisted for verify/compare. Requires an
+  rbk_ API key (https://rebeltechlabs.io — POST /v1/signup to get one free).
 branding:
   icon: check-circle
-  color: gray-dark
+  color: green
 inputs:
   api-key:
     description: "Rebel Verified API key (rbk_...). Get one free via POST /v1/signup."
@@ -14,7 +17,7 @@ inputs:
   api-url:
     description: "API base URL (self-hosted installs override this)."
     required: false
-    default: "https://gxo8latjoa.execute-api.us-east-1.amazonaws.com"
+    default: "https://api.rebeltechlabs.io"
   repo-token:
     description: "GitHub token for private repos (sent to the API only for the clone; never stored)."
     required: false
